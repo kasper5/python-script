@@ -3,16 +3,50 @@ __author__ = 'Kasper Fast'
 import requests
 import json
 import socket
+import sys
+
+
+def printUsage():
+    print "Usage:"+" (1)<API ip or host>"+" (2)<new object name>"+" (3)<username for API>"+" (4)<password for API>"
+    exit(1)
+
+
+def checkArgs():
+
+    allowedArgs = 5
+    argLength = len(sys.argv)
+
+    if argLength > allowedArgs:
+        printUsage()
+    elif argLength < allowedArgs:
+        printUsage()
+
+checkArgs()
+
 
 # remote OP5 API stuff: ip, user and pass
-uriHost = socket.gethostbyname("op5.axiell.local")
-username = ""
-password = ""
+uriHost = socket.gethostbyname(sys.argv[1])
+username = sys.argv[3]
+password = sys.argv[4]
+hostName = sys.argv[2]
 
-hostName = "parls711" # use puppet template variable here, <%= @hostname =>
+
+# check if the host object already exists
+def ifAlreadyExists():
+
+    getHostName = requests.get("https://"+uriHost+"/api/status/host?name="+hostName,
+                               auth=(username, password), verify=False)
+
+    jsonFormat = getHostName.json()
+
+    if jsonFormat:
+        print "host object " + hostName + " already exists, exiting..."
+        exit(1)
+
+ifAlreadyExists()
 
 # variable for hostData object
-ipAddress = "127.0.0.1" # use puppet template variable here, <%= @ipaddress =>
+ipAddress = "127.0.0.1"  # use puppet template variable here, <%= @ipaddress =>
 hostGroups = "HS-Prod-Service"
 hostData = {
     "host_name": hostName,
@@ -25,13 +59,13 @@ hostData = {
     "file_id": "etc/hosts.cfg",
     "check_command": "check-host-alive",
     "max_check_attempts": "3"
-} # json data for the host object
+}  # json data for the host object
 
 
 # variables used in serviceData object
 hostAlias = ""  # not required
 checkCMD = "check_nrpe"
-cmdArgs = ""
+
 # below objects only works for "check_nrpe"
 cmdArgsDesc = {
     "root_disk": "Disk Usage /",
@@ -47,7 +81,7 @@ cmdArgsDesc = {
     "load": "load",
     "check_zombie_procs": "Zombie processes",
 
-} # add new nagios entries here, item = check_args, key = service description
+}  # add new nagios entries here, item = check_args, key = service description
 
 cmdCustomArgs = {
     "PING": ["check_ping", "100,20%!500,60%"],
@@ -60,10 +94,9 @@ cmdCustomArgs = {
 
 def postServiceObjects(svc):
 
-        dump = svc
-        post = requests.post("https://"+uriHost+"/api/config/service/", data=json.dumps(dump),
-                             auth=(username, password), headers={'content-type': 'application/json'}, verify=False)
-        print post
+    dump = svc
+    requests.post("https://"+uriHost+"/api/config/service/", data=json.dumps(dump),
+                  auth=(username, password), headers={'content-type': 'application/json'}, verify=False)
 
 
 def createServiceObject(args):
@@ -137,17 +170,17 @@ def createCustomServiceObject(args):
 
 def createHostObject(newhost):
 
-    host = requests.post("https://"+uriHost+"/api/config/host/", data=json.dumps(newhost),
-                      auth=(username, password), headers={'content-type': 'application/json'}, verify=False)
-    print host.text
+    requests.post("https://"+uriHost+"/api/config/host/", data=json.dumps(newhost),
+                  auth=(username, password), headers={'content-type': 'application/json'}, verify=False)
+    # print host.text
 
 
 def saveAllChanges():
 
-    saveChanges = requests.post("https://"+uriHost+"/api/config/change", auth=(username, password),
-                                headers={'content-type': 'application/json'}, verify=False)
+    requests.post("https://"+uriHost+"/api/config/change", auth=(username, password),
+                  headers={'content-type': 'application/json'}, verify=False)
 
-    print saveChanges.text
+    # print saveChanges.text
 
 
 createHostObject(hostData)  # create host object, this won't create any check services
@@ -156,4 +189,4 @@ createServiceObject(cmdArgsDesc)  # create all service checks for the host
 
 createCustomServiceObject(cmdCustomArgs)
 
-saveAllChanges()  # finally save all of the changes
+saveAllChanges()  # finally, save all of the changes
