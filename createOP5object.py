@@ -16,9 +16,7 @@ def checkArgs():
     allowedArgs = 5
     argLength = len(sys.argv)
 
-    if argLength > allowedArgs:
-        printUsage()
-    elif argLength < allowedArgs:
+    if argLength > allowedArgs or argLength < allowedArgs:
         printUsage()
 
 checkArgs()
