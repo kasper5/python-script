@@ -44,8 +44,8 @@ def ifAlreadyExists():
 ifAlreadyExists()
 
 # variable for hostData object
-ipAddress = "127.0.0.1"  # use puppet template variable here, <%= @ipaddress =>
-hostGroups = "HS-Prod-Service"
+ipAddress = "127.0.0.1"  # host object IP addr
+hostGroups = "HS-Prod-Service" # which hostgroup should the new host belong in
 hostData = {
     "host_name": hostName,
     "alias": hostName,
